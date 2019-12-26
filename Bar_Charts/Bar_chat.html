@@ -1,0 +1,176 @@
+<html>
+    <head>
+
+    </head>
+    <style>
+    
+    .ex3 {
+           cursor: context-menu;
+            height: 80%;
+            overflow: auto;
+            position: absolute;
+            left: 88%;
+            top : 10%;
+          }
+    </style>
+    <div id="my_dataviz">
+      
+      <div class="ex3"></div> 
+    </div>
+    <script type="text/javascript" src="bar.json"></script> <!--in data-->
+    <script src="d3.js"></script>
+    <script src="d3.min.js"></script>
+    <body>
+        <script>
+
+ var multi = Object.keys(data.testRunResults) ;
+ var data1 = Array((data.testRunResults[multi]).length-1);
+ var k=0;
+ var maxi = 0;
+ for (var i=0;i<data1.length+1;i++)
+ {
+   if(data.testRunResults[multi][i].label!='Total')
+   {
+    yvalue = [];
+    yvalue[0] = +data.testRunResults[multi][i].tenPercentileResponseTime;
+    yvalue[1] = +data.testRunResults[multi][i].twentyPercentileResponseTime;
+    yvalue[2] = +data.testRunResults[multi][i].thirtyPercentileResponseTime;
+    yvalue[3] = +data.testRunResults[multi][i].fourtyPercentileResponseTime;
+    yvalue[4] = +data.testRunResults[multi][i].medResponseTime;
+    yvalue[5] = +data.testRunResults[multi][i].sixtyPercentileResponseTime;
+    yvalue[6] = +data.testRunResults[multi][i].seventyPercentileResponseTime;
+    yvalue[7] = +data.testRunResults[multi][i].eightyPercentileResponseTime;
+    yvalue[8] = +data.testRunResults[multi][i].ninetyPercentileResponseTime;
+    yvalue[9] = data.testRunResults[multi][i].maxResponseTime;
+
+    data1[k] = d3.range(10).map(function(d,j)
+    { if(maxi<yvalue[j])maxi=yvalue[j]; return { "y":+yvalue[j] , "x": +(j+1)*10} } );
+    
+   data1[k]['api'] = data.testRunResults[multi][i].label;
+    k++;
+   }
+ }
+console.log("val",maxi);
+console.log(data1);
+
+var color = d3.scaleOrdinal(d3.schemeCategory10); //color scale
+var margin = {top: 30, right: 30, bottom: 70, left: 60};
+var width = window.innerWidth - margin.left - margin.right;
+var height = window.innerHeight - margin.top - margin.bottom;
+
+var svg = d3.select("#my_dataviz")
+  .append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+  .append("g")
+    .attr("transform",
+          "translate(" + margin.left + "," + margin.top + ")");
+    
+    // Initialize the X axis
+var xScale = d3.scaleBand()
+  .range([ 0, width - width/8 ])
+  .padding(0.2)
+  .domain(data1[0].map(function(d) { return d.x;} ));
+  
+var xAxis = svg.append("g")
+  .attr("transform", "translate(0," + height + ")")
+  .call(d3.axisBottom(xScale)) ;
+
+// Initialize the Y axis
+var yScale = d3.scaleLinear()
+  .range([ height, 0])
+  .domain([0, maxi]);
+var yAxis = svg.append("g")
+  .attr("class", "myYaxis")
+  .call(d3.axisLeft(yScale));
+
+  var u = svg.selectAll("rect")
+      .data(data1[0]);
+      
+   u.enter()
+    .append("rect")
+    .attr("class","rec"+i)
+    .merge(u)
+      .attr("x", function(d) { return xScale(d.x); })
+      .attr("y", function(d) { return yScale(d.y); })
+      .attr("width", xScale.bandwidth())
+      .attr("height", function(d) { return height-yScale(d.y); })
+      .attr("fill",color(0))
+  
+      svg.selectAll(".val")
+          .data(data1[0])
+          .enter()
+          .append("g")
+          .attr("class","val")
+          .append("text")
+          .attr("x",function(d) { return xScale(d.x) + xScale.bandwidth()/2-5;})
+          .attr("y",function(d) { return yScale(d.y)-10; })
+          .attr("class",(d,i)=>"val"+i)
+          .text((d)=>d.y)
+          .style("fill",color(0));
+
+  
+  // scrollbar
+  scrollBar =  d3.selectAll(".ex3")
+                    .append("g")
+                    .attr("transform","translate(0,"+ height +")")
+                
+    scrollBar.selectAll(".label")
+        .data(data1).enter()
+            .append("g")
+            .attr("class","label")
+            .append("text")
+            .style("color",(d,i)=>(i)?"C5C5C5":color(i))
+            .on("click",function(d,i)
+            {
+                    u = svg.selectAll("rect")
+                          .data(data1[i]);
+                          
+                      u.enter()
+                      .append("rect")
+                      .merge(u)
+                      .transition()
+                      .duration(1000)
+                      .attr("x", function(d) { return xScale(d.x); })
+                      .attr("y", function(d) { return yScale(d.y); })
+                      .attr("width", xScale.bandwidth())
+                      .attr("height", function(d) { return height-yScale(d.y); })
+                      .attr("fill",color(i));
+                      
+                      uv = d3.selectAll(".val").remove();
+
+                      svg.selectAll(".val")
+                            .data(data1[i])
+                            .enter()
+                            .append("g")
+                            .attr("class","val")
+                            .append("text")
+                            .transition()
+                            .delay(700)
+                            .duration(0)
+                            .attr("x",function(d) { return xScale(d.x) + xScale.bandwidth()/2-5; })
+                            .attr("y",function(d) { return yScale(d.y)-10; })
+                            .attr("dy", ".35em")
+                            .attr("class",(d,i)=>"val"+i)
+                            .text((d)=>d.y)
+                            .style("fill",color(i));
+
+                      for(var j=0;j<data1.length;j++)
+                      {
+                        if(i==j)
+                        {
+                          d3.selectAll(".label"+i)
+                            .style("color",color(i));
+                        }
+                        else
+                        {
+                          d3.selectAll(".label"+j)
+                            .style("color","C5C5C5");
+                        }
+                      }
+            })
+            .attr("class",(d,i)=>"label"+i)
+            .html((d,i)=> data1[i].api +"<br/>") ;
+    </script>
+    </body>
+</html>
